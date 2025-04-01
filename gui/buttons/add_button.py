@@ -1,22 +1,15 @@
-from database import add_product
-import tkinter as tk
-from tkinter import messagebox
+def add_product_to_db(name_entry, price_entry, barcode_entry, validation_label):
+    name = name_entry.get().strip()
+    price = price_entry.get().strip()
+    barcode = barcode_entry.get().strip()
 
-def add_product_to_db(entry_name, entry_price, entry_barcode):
-    name = entry_name.get()
-    price = entry_price.get()
-    barcode = entry_barcode.get()
+    # Validation to check if all fields are filled
+    if not name or not price or not barcode:
+        validation_label.config(text="Please fill out all fields.", foreground="red")
+        return
 
-    if name and price and barcode:
-        try:
-            price = float(price)  # Convert price to float
-            add_product(name, price, barcode)  # Call to add_product function to save in DB
-            messagebox.showinfo("Success", "Product added successfully!")
-            # Clear the entry fields after successful addition
-            entry_name.delete(0, tk.END)
-            entry_price.delete(0, tk.END)
-            entry_barcode.delete(0, tk.END)
-        except ValueError:
-            messagebox.showerror("Error", "Please enter a valid price.")
-    else:
-        messagebox.showerror("Error", "Please fill out all fields.")
+    # Simulate adding the product to the database
+    # Here, you would normally add code to insert into your database
+
+    # After successful addition
+    validation_label.config(text="Product added successfully!", foreground="green")

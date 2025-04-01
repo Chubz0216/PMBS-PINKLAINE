@@ -6,8 +6,9 @@ import os
 import barcode
 from barcode.writer import ImageWriter
 import tkinter as tk
-from gui.buttons.add_button import add_product
+import gui.buttons.add_button as add_button
 from gui.buttons.add_button import add_product_to_db
+from tkinter import ttk, Tk
 
 
 
@@ -53,14 +54,16 @@ def generate_barcode_display():
         product_name_label.config(text="Invalid Barcode")
         price_label.config(text="")
 
+validation_label = None
+
 
 def run_app():
-    global barcode_entry, product_name_entry, price_entry, barcode_label, product_name_label, price_label
+    global validation_label, barcode_entry, product_name_entry, price_entry
 
-    root = ttk.Window(themename="journal")  # Light pink theme for soft aesthetics
+    root = Tk()
     root.title("PINKLAINE PRODUCT MANAGEMENT SYSTEM")
     root.geometry("1000x600")
-    root.configure(bg="#FDE2E4")  # Soft pastel pink background
+    root.configure(bg="#FDE2E4")
 
     main_frame = ttk.Frame(root, padding=15)
     main_frame.pack(fill=BOTH, expand=True)
@@ -76,7 +79,6 @@ def run_app():
     ttk.Label(form_frame, text="Barcode:").grid(row=1, column=0, padx=5, pady=5, sticky="w")
     barcode_entry = ttk.Entry(form_frame, width=40)
     barcode_entry.grid(row=1, column=1, padx=5, pady=5)
-    barcode_entry.bind("<KeyRelease>", lambda e: generate_barcode_display())
 
     ttk.Label(form_frame, text="Price:").grid(row=2, column=0, padx=5, pady=5, sticky="w")
     price_entry = ttk.Entry(form_frame, width=40)
@@ -100,8 +102,10 @@ def run_app():
     button_frame.grid(row=3, column=0, columnspan=3, pady=10)
 
     add_btn = ttk.Button(button_frame, text="✅ Add Product", bootstyle="success-outline",
-                         command=lambda: add_product_to_db(product_name_entry, price_entry, barcode_entry))
+                         command=lambda: add_product_to_db(product_name_entry, price_entry, barcode_entry,  validation_label))
     add_btn.pack(side=LEFT, padx=5, fill=X, expand=True)
+
+
 
     update_btn = ttk.Button(button_frame, text="🔄 Update Product", bootstyle="warning-outline")
     update_btn.pack(side=LEFT, padx=5, fill=X, expand=True)
@@ -112,6 +116,7 @@ def run_app():
     print_btn = ttk.Button(button_frame, text="🖨️ Print Barcode", bootstyle="success-outline", command=print_barcode)
     print_btn.pack(side=LEFT, padx=5, fill=X, expand=True)
 
+
     # Search Section
     search_frame = ttk.LabelFrame(main_frame, text="Search Product", padding=10)
     search_frame.pack(fill=X, padx=10, pady=5)
@@ -120,6 +125,10 @@ def run_app():
     search_entry.pack(side=LEFT, padx=5, pady=5)
     search_btn = ttk.Button(search_frame, text="🔍 Search", bootstyle="primary-outline")
     search_btn.pack(side=LEFT, padx=5)
+
+    # Validation message label
+    validation_label = ttk.Label(form_frame, text="", foreground="red", font=("Arial", 10))
+    validation_label.grid(row=4, column=0, columnspan=3, pady=5)
 
     # Product List Table
     table_frame = ttk.LabelFrame(main_frame, text="Product List", padding=10)
