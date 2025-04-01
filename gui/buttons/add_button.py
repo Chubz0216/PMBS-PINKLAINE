@@ -1,3 +1,8 @@
+import sqlite3
+
+def connect_db():
+    return sqlite3.connect('products.db')  # Path to your SQLite database file
+
 def add_product_to_db(name_entry, price_entry, barcode_entry, validation_label):
     name = name_entry.get().strip()
     price = price_entry.get().strip()
@@ -8,8 +13,48 @@ def add_product_to_db(name_entry, price_entry, barcode_entry, validation_label):
         validation_label.config(text="Please fill out all fields.", foreground="red")
         return
 
-    # Simulate adding the product to the database
-    # Here, you would normally add code to insert into your database
+    # Convert price to float, ensure it's a valid number
+    try:
+        price = float(price)
+    except ValueError:
+        validation_label.config(text="Invalid price. Please enter a number.", foreground="red")
+        return
 
-    # After successful addition
-    validation_label.config(text="Product added successfully!", foreground="green")
+    try:
+        # Insert product into the database
+        add_product(name, price, barcode)
+        # After successful addition
+        validation_label.config(text="Product added successfully!", foreground="green")
+    except sqlite3.Error as e:
+        validation_label.config(text=f"Error: {e}", foreground="red")
+
+
+def add_product(name, price, barcode):
+    try:
+        # Establish connection to the database
+        conn = connect_db()
+        cursor = conn.cursor()
+
+        # Create the table if it doesn't exist
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS products (
+                id INTEGER PRIMARY KEY,
+                name TEXT NOT NULL,
+                price REAL NOT NULL,
+                barcode TEXT NOT NULL
+            )
+        ''')
+
+        # Insert the new product into the database
+        cursor.execute('''
+            INSERT INTO products (name, price, barcode)
+            VALUES (?, ?, ?)
+        ''', (name, price, barcode))
+
+        # Commit the changes
+        conn.commit()
+        conn.close()  # Close the connection
+
+    except sqlite3.Error as e:
+        print(f"Error: {e}")
+        raise e  # Reraise the error so it can be caught in the add_product_to_db function

@@ -1,4 +1,3 @@
-
 import ttkbootstrap as ttk
 from ttkbootstrap.constants import *
 from PIL import Image, ImageTk
@@ -9,7 +8,9 @@ import tkinter as tk
 import gui.buttons.add_button as add_button
 from gui.buttons.add_button import add_product_to_db
 from tkinter import ttk, Tk
-
+from tkinter import ttk
+from database import get_all_products
+from gui.buttons.update_button import update_product
 
 
 def print_barcode():
@@ -54,7 +55,20 @@ def generate_barcode_display():
         product_name_label.config(text="Invalid Barcode")
         price_label.config(text="")
 
+
 validation_label = None
+
+
+def load_products_into_treeview(product_list):
+    # Get all products from the database
+    products = get_all_products()
+
+    # Clear the existing items in the Treeview
+    product_list.delete(*product_list.get_children())
+
+    # Add each product to the Treeview
+    for product in products:
+        product_list.insert("", "end", values=(product[0], product[1], product[2], f"₱{product[3]:.2f}"))
 
 
 def run_app():
@@ -64,6 +78,7 @@ def run_app():
     root.title("PINKLAINE PRODUCT MANAGEMENT SYSTEM")
     root.geometry("1000x600")
     root.configure(bg="#FDE2E4")
+
 
     main_frame = ttk.Frame(root, padding=15)
     main_frame.pack(fill=BOTH, expand=True)
@@ -102,12 +117,12 @@ def run_app():
     button_frame.grid(row=3, column=0, columnspan=3, pady=10)
 
     add_btn = ttk.Button(button_frame, text="✅ Add Product", bootstyle="success-outline",
-                         command=lambda: add_product_to_db(product_name_entry, price_entry, barcode_entry,  validation_label))
+                         command=lambda: add_product_to_db(product_name_entry, price_entry, barcode_entry, validation_label))
     add_btn.pack(side=LEFT, padx=5, fill=X, expand=True)
 
-
-
-    update_btn = ttk.Button(button_frame, text="🔄 Update Product", bootstyle="warning-outline")
+    update_btn = ttk.Button(button_frame, text="🔄 Update Product", bootstyle="warning-outline",
+                            command=lambda: update_product(product_list, product_name_entry, price_entry, barcode_entry,
+                                                           validation_label)())
     update_btn.pack(side=LEFT, padx=5, fill=X, expand=True)
 
     delete_btn = ttk.Button(button_frame, text="🗑️ Delete Product", bootstyle="danger-outline")
@@ -115,7 +130,6 @@ def run_app():
 
     print_btn = ttk.Button(button_frame, text="🖨️ Print Barcode", bootstyle="success-outline", command=print_barcode)
     print_btn.pack(side=LEFT, padx=5, fill=X, expand=True)
-
 
     # Search Section
     search_frame = ttk.LabelFrame(main_frame, text="Search Product", padding=10)
@@ -130,21 +144,50 @@ def run_app():
     validation_label = ttk.Label(form_frame, text="", foreground="red", font=("Arial", 10))
     validation_label.grid(row=4, column=0, columnspan=3, pady=5)
 
-    # Product List Table
-    table_frame = ttk.LabelFrame(main_frame, text="Product List", padding=10)
+    # Product List Table (Treeview)
+    table_frame = ttk.LabelFrame(main_frame, text="📦 Product List", padding=10)
     table_frame.pack(fill=BOTH, expand=True, padx=10, pady=10)
 
-    product_list = ttk.Treeview(table_frame, columns=("ID", "Name", "Barcode", "Price"), show="headings")
-    product_list.heading("ID", text="ID")
-    product_list.heading("Name", text="Product Name")
-    product_list.heading("Barcode", text="Barcode")
-    product_list.heading("Price", text="Price")
+    # Create Treeview
+    product_list = ttk.Treeview(table_frame, columns=("ID", "Name", "Barcode", "Price"), show="headings", height=10)
+
+    # Column headings (Gawin silang center-aligned)
+    product_list.heading("ID", text="ID", anchor="center")
+    product_list.heading("Name", text="📌 Product Name", anchor="center")
+    product_list.heading("Barcode", text="🔖 Barcode", anchor="center")
+    product_list.heading("Price", text="💰 Price", anchor="center")
+
+    # Column width settings (Pantay-pantay na spacing)
+    product_list.column("ID", width=50, anchor="center")
+    product_list.column("Name", width=300, anchor="center")
+    product_list.column("Barcode", width=200, anchor="center")
+    product_list.column("Price", width=100, anchor="center")
+
+    # Style for better aesthetics
+    style = ttk.Style()
+    style.configure("Treeview", rowheight=25, borderwidth=1, relief="solid")  # Para may border effect
+    style.configure("Treeview.Heading", font=("Arial", 10, "bold"), background="#f0f0f0")  # Header styling
+    product_list.config(show="headings", selectmode="browse")
+
+    # Add alternating row colors (striped effect)
+    product_list.tag_configure("evenrow", background="#f2f2f2")  # Light gray
+    product_list.tag_configure("oddrow", background="white")
+
     product_list.pack(fill=BOTH, expand=True)
 
-    # Clear List Button
-    clear_btn = ttk.Button(table_frame, text="🧹 Clear List", bootstyle="secondary-outline",
-                           command=lambda: product_list.delete(*product_list.get_children()))
-    clear_btn.pack(pady=5)
+    # Load products into Treeview on startup
+    load_products_into_treeview(product_list)
+
+    # Buttons (View List and Clear List)
+    buttons_frame = ttk.Frame(table_frame)
+    buttons_frame.pack(pady=5)
+
+    view_btn = ttk.Button(buttons_frame, text="👀 View List", bootstyle="primary-outline", width=15)
+    view_btn.pack(side=LEFT, padx=5)
+
+    clear_btn = ttk.Button(buttons_frame, text="🧹 Clear List", bootstyle="secondary-outline", width=15)
+    clear_btn.pack(side=LEFT, padx=5)
+
 
     root.mainloop()
 
