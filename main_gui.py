@@ -99,9 +99,15 @@ def run_app():
     button_frame = ttk.Frame(form_frame, padding=10)
     button_frame.grid(row=3, column=0, columnspan=3, pady=10)
 
+    # Label para sa validation errors
+    error_label = ttk.Label(button_frame, text="", foreground="red", font=("Arial", 10, "bold"))
+    error_label.pack(side=BOTTOM, pady=5)
+
     add_btn = ttk.Button(button_frame, text="✅ Add Product", bootstyle="success-outline",
-                         command=lambda: add_product_to_db(product_name_entry, price_entry, barcode_entry))
+                         command=lambda: add_product_to_db(product_name_entry, price_entry, barcode_entry, error_label))
     add_btn.pack(side=LEFT, padx=5, fill=X, expand=True)
+
+
 
     update_btn = ttk.Button(button_frame, text="🔄 Update Product", bootstyle="warning-outline")
     update_btn.pack(side=LEFT, padx=5, fill=X, expand=True)
@@ -131,6 +137,8 @@ def run_app():
     product_list.heading("Barcode", text="Barcode")
     product_list.heading("Price", text="Price")
     product_list.pack(fill=BOTH, expand=True)
+
+
 
     # Clear List Button
     clear_btn = ttk.Button(table_frame, text="🧹 Clear List", bootstyle="secondary-outline",
