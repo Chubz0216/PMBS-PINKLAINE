@@ -4,9 +4,10 @@ def connect_db():
     return sqlite3.connect('products.db')  # Path to your SQLite database file
 
 def add_product_to_db(name_entry, price_entry, barcode_entry, validation_label):
+    barcode = barcode_entry.get().strip()
     name = name_entry.get().strip()
     price = price_entry.get().strip()
-    barcode = barcode_entry.get().strip()
+
 
     # Validation to check if all fields are filled
     if not name or not price or not barcode:

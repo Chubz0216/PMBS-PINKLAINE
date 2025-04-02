@@ -8,9 +8,27 @@ import tkinter as tk
 import gui.buttons.add_button as add_button
 from gui.buttons.add_button import add_product_to_db
 from tkinter import ttk, Tk
-from tkinter import ttk
+
 from database import get_all_products
 from gui.buttons.update_button import update_product
+from database import get_all_products
+from gui.buttons.clearlist_button import clear_list  # Import the clear_list function
+from gui.buttons.view_button import view_product_list
+
+
+def get_selected_product_id(product_list):
+    try:
+        selected_item = product_list.selection()
+        if selected_item:
+            selected_product_id = product_list.item(selected_item[0], "values")[0]  # Assuming ID is the first column
+            return selected_product_id
+        else:
+            print("No product selected.")
+            return None
+    except Exception as e:
+        print(f"Error getting selected product ID: {e}")
+        return None
+
 
 
 def print_barcode():
@@ -68,7 +86,18 @@ def load_products_into_treeview(product_list):
 
     # Add each product to the Treeview
     for product in products:
-        product_list.insert("", "end", values=(product[0], product[1], product[2], f"₱{product[3]:.2f}"))
+        try:
+            # Ensure that price is a float and barcode is a string
+            price = float(product[2])  # Price should be the 3rd element
+            barcode = str(product[3])  # Barcode should be the 4th element
+        except ValueError:
+            price = 0.00  # Default value kung may error sa conversion
+            barcode = "Unknown"  # If the barcode is invalid
+
+        print(f"DEBUG: Adding product -> ID: {product[0]}, Name: {product[1]}, Barcode: {barcode}, Price: ₱{price:.2f}")
+
+        # Insert the correct values in the right order
+        product_list.insert("", "end", values=(product[0], product[1], barcode, f"₱{price:.2f}"))
 
 
 def run_app():
@@ -78,6 +107,7 @@ def run_app():
     root.title("PINKLAINE PRODUCT MANAGEMENT SYSTEM")
     root.geometry("1000x600")
     root.configure(bg="#FDE2E4")
+
 
 
     main_frame = ttk.Frame(root, padding=15)
@@ -112,6 +142,11 @@ def run_app():
     price_label = ttk.Label(barcode_display_frame, text="", font=("Arial", 10))
     price_label.pack()
 
+    status_label = ttk.Label(form_frame, text="", foreground="red", font=("Arial", 10))  # Define status_label
+    status_label.grid(row=4, column=0, columnspan=3, pady=5)
+
+
+
     # Buttons (Below Product Details)
     button_frame = ttk.Frame(form_frame, padding=10)
     button_frame.grid(row=3, column=0, columnspan=3, pady=10)
@@ -125,11 +160,18 @@ def run_app():
                                                            validation_label)())
     update_btn.pack(side=LEFT, padx=5, fill=X, expand=True)
 
-    delete_btn = ttk.Button(button_frame, text="🗑️ Delete Product", bootstyle="danger-outline")
+    # Delete Section
+    from gui.buttons.delete_button import delete_product
+
+    delete_btn = ttk.Button(button_frame, text="🗑️ Delete Product", bootstyle="danger-outline",
+                            command=lambda: delete_product(product_list, get_selected_product_id(product_list),
+                                                           status_label))
     delete_btn.pack(side=LEFT, padx=5, fill=X, expand=True)
 
     print_btn = ttk.Button(button_frame, text="🖨️ Print Barcode", bootstyle="success-outline", command=print_barcode)
     print_btn.pack(side=LEFT, padx=5, fill=X, expand=True)
+
+
 
     # Search Section
     search_frame = ttk.LabelFrame(main_frame, text="Search Product", padding=10)
@@ -157,6 +199,8 @@ def run_app():
     product_list.heading("Barcode", text="🔖 Barcode", anchor="center")
     product_list.heading("Price", text="💰 Price", anchor="center")
 
+
+
     # Column width settings (Pantay-pantay na spacing)
     product_list.column("ID", width=50, anchor="center")
     product_list.column("Name", width=300, anchor="center")
@@ -176,16 +220,27 @@ def run_app():
     product_list.pack(fill=BOTH, expand=True)
 
     # Load products into Treeview on startup
-    load_products_into_treeview(product_list)
+    product_list.delete(*product_list.get_children())  # Clear Treeview initially
+
 
     # Buttons (View List and Clear List)
     buttons_frame = ttk.Frame(table_frame)
     buttons_frame.pack(pady=5)
 
-    view_btn = ttk.Button(buttons_frame, text="👀 View List", bootstyle="primary-outline", width=15)
+    view_btn = ttk.Button(buttons_frame, text="👀 View List", bootstyle="primary-outline", width=15,
+        command=lambda: view_product_list(product_list))
     view_btn.pack(side=LEFT, padx=5)
 
-    clear_btn = ttk.Button(buttons_frame, text="🧹 Clear List", bootstyle="secondary-outline", width=15)
+    def clear_list():
+        # Tanggalin ang lahat ng items sa Treeview
+        product_list.delete(*product_list.get_children())
+        print("DEBUG: Clearing list...")
+        product_list.delete(*product_list.get_children())
+
+    from gui.buttons.clearlist_button import clear_list  # Import the clear_list function
+
+    clear_btn = ttk.Button(buttons_frame, text="🧹 Clear List", bootstyle="secondary-outline", width=15,
+                           command=lambda: clear_list(product_list))
     clear_btn.pack(side=LEFT, padx=5)
 
 
