@@ -3,7 +3,6 @@ import tkinter as tk
 from database import check_price_data
 from database import fix_price_column
 from gui.buttons.clearlist_button import clear_list  # Import the clear_list function
-
 # Sa function kung saan tinatawag ang get_all_products()
 product_list = get_all_products()
 

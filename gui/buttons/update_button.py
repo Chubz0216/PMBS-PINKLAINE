@@ -1,43 +1,53 @@
 import sqlite3
-from database import update_product_in_db
-
-
-def update_product(product_list, product_name_entry, price_entry, barcode_entry, validation_label):
-    # Kunin ang selected product mula sa Treeview
+from utils.utils import load_products_into_treeview
+# Function to get the selected product ID from the Treeview
+def get_selected_product_id(product_list):
     selected_item = product_list.selection()
-    if not selected_item:
-        validation_label.config(text="Please select a product to update.", foreground="red")
-        return
+    if selected_item:
+        # Retrieve the product ID (assuming it's the first column)
+        product_id = product_list.item(selected_item[0])['values'][0]
+        return product_id
+    return None
 
-    # Kunin ang values ng selected product
-    product = product_list.item(selected_item)["values"]
-    product_id = product[0]  # Ang ID ng product
-    name = product[1]
-    price = product[3]
-    barcode = product[2]
+# Update product function
+def update_product(product_list, product_name_entry, price_entry, barcode_entry, validation_label):
+    selected_product_id = get_selected_product_id(product_list)  # Get the selected product ID
 
-    # I-set ang mga entry fields sa existing values
-    product_name_entry.delete(0, "end")
-    product_name_entry.insert(0, name)
+    if selected_product_id:
+        new_name = product_name_entry.get().strip()
+        new_price = price_entry.get().strip()
+        new_barcode = barcode_entry.get().strip()
 
-    price_entry.delete(0, "end")
-    price_entry.insert(0, price)
+        if new_name and new_price and new_barcode:
+            try:
+                # Connect to the database and update product
+                conn = sqlite3.connect('products.db')
+                cursor = conn.cursor()
 
-    barcode_entry.delete(0, "end")
-    barcode_entry.insert(0, barcode)
+                # Update the product in the database
+                cursor.execute("""
+                    UPDATE products
+                    SET name = ?, price = ?, barcode = ?
+                    WHERE id = ?
+                """, (new_name, new_price, new_barcode, selected_product_id))
 
-    # Add button will now trigger the update
-    def save_updated_product():
-        updated_name = product_name_entry.get().strip()
-        updated_price = price_entry.get().strip()
-        updated_barcode = barcode_entry.get().strip()
+                conn.commit()  # Commit the transaction to save the changes
 
-        # Call the update function
-        update_product_in_db(product_id, updated_name, updated_price, updated_barcode)
+                # Clear input fields and validation message
+                product_name_entry.delete(0, 'end')
+                price_entry.delete(0, 'end')
+                barcode_entry.delete(0, 'end')
+                validation_label.config(text="Product updated successfully!", foreground="green")
 
-        # I-update ang Treeview
-        product_list.item(selected_item, values=(product_id, updated_name, updated_barcode, updated_price))
+                # Now, update the selected product row in Treeview without reloading all data
+                selected_item = product_list.selection()  # Get selected item
+                if selected_item:
+                    product_list.item(selected_item, values=(selected_product_id, new_name, new_barcode, f"₱{new_price}"))
 
-        validation_label.config(text="Product updated successfully!", foreground="green")
-
-    return save_updated_product
+                conn.close()  # Close the database connection
+            except Exception as e:
+                validation_label.config(text=f"Error: {e}", foreground="red")
+        else:
+            validation_label.config(text="All fields are required!", foreground="red")
+    else:
+        validation_label.config(text="No product selected!", foreground="red")

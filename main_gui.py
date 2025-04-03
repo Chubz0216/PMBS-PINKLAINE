@@ -8,13 +8,11 @@ import tkinter as tk
 import gui.buttons.add_button as add_button
 from gui.buttons.add_button import add_product_to_db
 from tkinter import ttk, Tk
-
-from database import get_all_products
-from gui.buttons.update_button import update_product
 from database import get_all_products
 from gui.buttons.clearlist_button import clear_list  # Import the clear_list function
 from gui.buttons.view_button import view_product_list
-
+from gui.buttons.update_button import update_product
+from utils.utils import load_products_into_treeview
 
 def get_selected_product_id(product_list):
     try:
@@ -77,28 +75,31 @@ def generate_barcode_display():
 validation_label = None
 
 
-def load_products_into_treeview(product_list):
-    # Get all products from the database
-    products = get_all_products()
 
-    # Clear the existing items in the Treeview
-    product_list.delete(*product_list.get_children())
 
-    # Add each product to the Treeview
-    for product in products:
-        try:
-            # Ensure that price is a float and barcode is a string
-            price = float(product[2])  # Price should be the 3rd element
-            barcode = str(product[3])  # Barcode should be the 4th element
-        except ValueError:
-            price = 0.00  # Default value kung may error sa conversion
-            barcode = "Unknown"  # If the barcode is invalid
+def on_product_select(event, product_list, product_name_entry, barcode_entry, price_entry):
+    selected_item = product_list.selection()
+    if selected_item:
+        product_id = product_list.item(selected_item[0], "values")[0]  # Assuming ID is the first column
+        product_name = product_list.item(selected_item[0], "values")[1]
+        barcode = product_list.item(selected_item[0], "values")[2]
+        price = product_list.item(selected_item[0], "values")[3]
 
-        print(f"DEBUG: Adding product -> ID: {product[0]}, Name: {product[1]}, Barcode: {barcode}, Price: ₱{price:.2f}")
+        # Set the values to input fields
+        product_name_entry.delete(0, tk.END)
+        product_name_entry.insert(0, product_name)
 
-        # Insert the correct values in the right order
-        product_list.insert("", "end", values=(product[0], product[1], barcode, f"₱{price:.2f}"))
+        barcode_entry.delete(0, tk.END)
+        barcode_entry.insert(0, barcode)
 
+        price_entry.delete(0, tk.END)
+        price_entry.insert(0, price)
+
+        # Store the selected product ID (you can use this later for updating)
+        product_name_entry.selected_product_id = product_id
+
+
+# end function section
 
 def run_app():
     global validation_label, barcode_entry, product_name_entry, price_entry
@@ -155,10 +156,7 @@ def run_app():
                          command=lambda: add_product_to_db(product_name_entry, price_entry, barcode_entry, validation_label))
     add_btn.pack(side=LEFT, padx=5, fill=X, expand=True)
 
-    update_btn = ttk.Button(button_frame, text="🔄 Update Product", bootstyle="warning-outline",
-                            command=lambda: update_product(product_list, product_name_entry, price_entry, barcode_entry,
-                                                           validation_label)())
-    update_btn.pack(side=LEFT, padx=5, fill=X, expand=True)
+
 
     # Delete Section
     from gui.buttons.delete_button import delete_product
@@ -243,6 +241,15 @@ def run_app():
                            command=lambda: clear_list(product_list))
     clear_btn.pack(side=LEFT, padx=5)
 
+    # Bind Treeview selection
+    product_list.bind("<ButtonRelease-1>",
+                      lambda event: on_product_select(event, product_list, product_name_entry, barcode_entry,
+                                                      price_entry))
+    # Update button
+    update_btn = ttk.Button(button_frame, text="🔄 Update Product", bootstyle="warning-outline",
+                            command=lambda: update_product(product_list, product_name_entry, price_entry, barcode_entry,
+                                                           validation_label))
+    update_btn.pack(side=LEFT, padx=5, fill=X, expand=True)
 
     root.mainloop()
 

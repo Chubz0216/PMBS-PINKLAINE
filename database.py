@@ -1,6 +1,4 @@
 import sqlite3
-
-
 def check_price_data():
     try:
         conn = connect_db()
@@ -149,3 +147,17 @@ def add_auto_increment_id():
         print("ID column added successfully.")
     except sqlite3.Error as e:
         print(f"Error: {e}")
+
+def check_existing_data():
+    conn = connect_db()
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT id, name, price, barcode FROM products")
+    products = cursor.fetchall()
+
+    print("📌 Existing Products Data:")
+    for product in products:
+        print(product)
+
+    conn.close()
+

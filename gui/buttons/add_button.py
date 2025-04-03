@@ -30,16 +30,20 @@ def add_product_to_db(name_entry, price_entry, barcode_entry, validation_label):
         validation_label.config(text=f"Error: {e}", foreground="red")
 
 
+import sqlite3
+
+def connect_db():
+    return sqlite3.connect('products.db')  # Path to your SQLite database file
+
 def add_product(name, price, barcode):
     try:
-        # Establish connection to the database
         conn = connect_db()
         cursor = conn.cursor()
 
-        # Create the table if it doesn't exist
+        # Create the table if it doesn't exist (with AUTOINCREMENT on id)
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS products (
-                id INTEGER PRIMARY KEY,
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
                 name TEXT NOT NULL,
                 price REAL NOT NULL,
                 barcode TEXT NOT NULL
@@ -54,8 +58,28 @@ def add_product(name, price, barcode):
 
         # Commit the changes
         conn.commit()
-        conn.close()  # Close the connection
+        conn.close()
+
+        print("✅ Product added successfully!")
 
     except sqlite3.Error as e:
         print(f"Error: {e}")
-        raise e  # Reraise the error so it can be caught in the add_product_to_db function
+        raise e
+def check_all_products():
+    try:
+        conn = connect_db()
+        cursor = conn.cursor()
+
+        cursor.execute("SELECT * FROM products")
+        products = cursor.fetchall()
+
+        for product in products:
+            print(product)
+
+        conn.close()
+
+    except sqlite3.Error as e:
+        print(f"Error: {e}")
+
+# Call the function to check the inserted products
+check_all_products()
