@@ -1,5 +1,42 @@
 import sqlite3
 
+def resequence_product_ids():
+    try:
+        conn = sqlite3.connect('products.db')
+        cursor = conn.cursor()
+
+        # Mag-create ng bagong temporary table na may sequence ng IDs
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS temp_products (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                barcode TEXT NOT NULL,
+                name TEXT NOT NULL,
+                price REAL NOT NULL
+            )
+        ''')
+
+        # Mag-copy ng data mula sa original products table to temp_products
+        cursor.execute('''
+            INSERT INTO temp_products (barcode, name, price)
+            SELECT barcode, name, price FROM products;
+        ''')
+
+        # Tanggalin ang original na table
+        cursor.execute('DROP TABLE IF EXISTS products')
+
+        # I-rename ang temp_products table upang maging products ulit
+        cursor.execute('ALTER TABLE temp_products RENAME TO products')
+
+        # Commit the changes and close connection
+        conn.commit()
+        conn.close()
+
+        print("✅ Product IDs resequenced successfully!")
+
+    except sqlite3.Error as e:
+        print(f"Error resequencing product IDs: {e}")
+
+
 def delete_product_from_db(product_id):
     try:
         # Connect to the database
@@ -38,9 +75,13 @@ def delete_product(product_list, selected_product_id, status_label):
                 product_list.delete(item)
                 break
 
+        # Tawagin ang resequencing function pagkatapos ng delete
+        resequence_product_ids()
+
         # I-update ang status_label na may success message
-        status_label.config(text="✅ Product deleted successfully!", foreground="green")
+        status_label.config(text="✅ Product deleted and IDs resequenced successfully!", foreground="green")
 
     except Exception as e:
         print(f"Error deleting product: {e}")
         status_label.config(text="❌ Failed to delete product.", foreground="red")
+

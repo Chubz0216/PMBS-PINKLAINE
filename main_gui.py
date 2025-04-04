@@ -101,6 +101,16 @@ def on_product_select(event, product_list, product_name_entry, barcode_entry, pr
 
 # end function section
 
+def format_price(event=None):
+    raw = price_entry.get().replace("₱", "").replace(",", "").strip()
+    try:
+        value = float(raw)
+        formatted = f"₱{value:,.2f}"
+        price_entry.delete(0, tk.END)
+        price_entry.insert(0, formatted)
+    except ValueError:
+        price_entry.delete(0, tk.END)
+
 def run_app():
     global validation_label, barcode_entry, product_name_entry, price_entry
 
@@ -129,6 +139,9 @@ def run_app():
     ttk.Label(form_frame, text="Price:").grid(row=2, column=0, padx=5, pady=5, sticky="w")
     price_entry = ttk.Entry(form_frame, width=40)
     price_entry.grid(row=2, column=1, padx=5, pady=5)
+
+    price_entry.bind("<FocusOut>", format_price)  # Format kapag nawala ang focus
+    price_entry.bind("<Return>", format_price)  # Format din kapag pinindot ang Enter
 
     # Barcode Display Area
     barcode_display_frame = ttk.Frame(form_frame, padding=10)

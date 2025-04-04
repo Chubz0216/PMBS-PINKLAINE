@@ -3,22 +3,26 @@ import sqlite3
 def connect_db():
     return sqlite3.connect('products.db')  # Path to your SQLite database file
 
+
+
 def add_product_to_db(name_entry, price_entry, barcode_entry, validation_label):
     barcode = barcode_entry.get().strip()
     name = name_entry.get().strip()
     price = price_entry.get().strip()
 
-
     # Validation to check if all fields are filled
     if not name or not price or not barcode:
         validation_label.config(text="Please fill out all fields.", foreground="red")
+        # Remove the validation message after 2 seconds
+        validation_label.after(2000, lambda: validation_label.config(text=""))
         return
-
     # Convert price to float, ensure it's a valid number
+    raw_price = price_entry.get().replace("₱", "").replace(",", "").strip()
+
     try:
-        price = float(price)
+        price = float(raw_price)
     except ValueError:
-        validation_label.config(text="Invalid price. Please enter a number.", foreground="red")
+        validation_label.config(text="Invalid price. Please enter a number.")
         return
 
     try:
@@ -26,9 +30,11 @@ def add_product_to_db(name_entry, price_entry, barcode_entry, validation_label):
         add_product(name, price, barcode)
         # After successful addition
         validation_label.config(text="Product added successfully!", foreground="green")
+
+        # Remove validation message after 2 seconds
+        validation_label.after(2000, lambda: validation_label.config(text=""))
     except sqlite3.Error as e:
         validation_label.config(text=f"Error: {e}", foreground="red")
-
 
 import sqlite3
 
@@ -39,6 +45,9 @@ def add_product(name, price, barcode):
     try:
         conn = connect_db()
         cursor = conn.cursor()
+
+        # Reset the AUTOINCREMENT sequence if needed
+        cursor.execute("DELETE FROM sqlite_sequence WHERE name='products'")
 
         # Create the table if it doesn't exist (with AUTOINCREMENT on id)
         cursor.execute('''

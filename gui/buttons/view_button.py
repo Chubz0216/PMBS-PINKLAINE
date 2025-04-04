@@ -15,7 +15,7 @@ def view_product_list(product_list):
             barcode = str(product[3])  # Barcode (dapat string)
         except ValueError:
             price = 0.00  # Default value kung may error sa conversion
-            barcode = "Unknown"
+            barcode = product[3] if product[3] else "Unknown"  # Default to "Unknown" kung walang barcode
 
         # Ipakita ang product details sa Treeview
         product_list.insert("", "end", values=(product[0], product[1], barcode, f"₱{price:.2f}"))

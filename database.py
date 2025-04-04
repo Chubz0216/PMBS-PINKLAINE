@@ -56,7 +56,9 @@ def get_all_products():
     try:
         conn = connect_db()
         cursor = conn.cursor()
-        cursor.execute("SELECT * FROM products")
+
+        # Be explicit about the columns you want to retrieve
+        cursor.execute("SELECT id, name, price, barcode FROM products")
         products = cursor.fetchall()
 
         return products
