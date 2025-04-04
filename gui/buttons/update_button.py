@@ -1,5 +1,7 @@
 import sqlite3
 from utils.utils import load_products_into_treeview
+
+
 # Function to get the selected product ID from the Treeview
 def get_selected_product_id(product_list):
     selected_item = product_list.selection()
@@ -8,6 +10,7 @@ def get_selected_product_id(product_list):
         product_id = product_list.item(selected_item[0])['values'][0]
         return product_id
     return None
+
 
 # Update product function
 def update_product(product_list, product_name_entry, price_entry, barcode_entry, validation_label):
@@ -20,6 +23,9 @@ def update_product(product_list, product_name_entry, price_entry, barcode_entry,
 
         if new_name and new_price and new_barcode:
             try:
+                # Clean up price input to ensure the Peso sign is only added once
+                raw_price = new_price.replace("₱", "").replace(",", "").strip()
+
                 # Connect to the database and update product
                 conn = sqlite3.connect('products.db')
                 cursor = conn.cursor()
@@ -29,7 +35,7 @@ def update_product(product_list, product_name_entry, price_entry, barcode_entry,
                     UPDATE products
                     SET name = ?, price = ?, barcode = ?
                     WHERE id = ?
-                """, (new_name, new_price, new_barcode, selected_product_id))
+                """, (new_name, raw_price, new_barcode, selected_product_id))
 
                 conn.commit()  # Commit the transaction to save the changes
 
@@ -42,7 +48,9 @@ def update_product(product_list, product_name_entry, price_entry, barcode_entry,
                 # Now, update the selected product row in Treeview without reloading all data
                 selected_item = product_list.selection()  # Get selected item
                 if selected_item:
-                    product_list.item(selected_item, values=(selected_product_id, new_name, new_barcode, f"₱{new_price}"))
+                    # Format price with Peso sign
+                    product_list.item(selected_item,
+                                      values=(selected_product_id, new_name, new_barcode, f"₱{float(raw_price):.2f}"))
 
                 conn.close()  # Close the database connection
             except Exception as e:
