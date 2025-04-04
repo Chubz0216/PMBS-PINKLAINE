@@ -13,6 +13,8 @@ from gui.buttons.clearlist_button import clear_list  # Import the clear_list fun
 from gui.buttons.view_button import view_product_list
 from gui.buttons.update_button import update_product
 from utils.utils import load_products_into_treeview
+from database import search_products  # Assuming search_products is defined in database.py
+
 
 def get_selected_product_id(product_list):
     try:
@@ -111,12 +113,40 @@ def format_price(event=None):
     except ValueError:
         price_entry.delete(0, tk.END)
 
+
+def perform_search(product_list, search_entry, validation_label):
+    keyword = search_entry.get().strip()
+
+    if not keyword:
+        validation_label.config(text="Please enter a search keyword.", foreground="red")
+        validation_label.after(2000, lambda: validation_label.config(text=""))
+        return
+
+    # Perform the search using the search_products function
+    results = search_products(keyword)
+
+    # Clear existing rows in the Treeview
+    for row in product_list.get_children():
+        product_list.delete(row)
+
+    # If results are found, insert them into the Treeview
+    if results:
+        for row in results:
+            id, name, barcode, price = row
+            product_list.insert('', 'end', values=(id, name, barcode, f"₱{float(price):.2f}"))
+
+        validation_label.config(text=f"{len(results)} result(s) found.", foreground="green")
+    else:
+        validation_label.config(text="No results found.", foreground="orange")
+
+    validation_label.after(2000, lambda: validation_label.config(text=""))
+
 def run_app():
     global validation_label, barcode_entry, product_name_entry, price_entry
 
     root = Tk()
     root.title("PINKLAINE PRODUCT MANAGEMENT SYSTEM")
-    root.geometry("1000x600")
+    root.geometry("1000x800")
     root.configure(bg="#FDE2E4")
 
 
@@ -171,6 +201,7 @@ def run_app():
 
 
 
+
     # Delete Section
     from gui.buttons.delete_button import delete_product
 
@@ -179,12 +210,12 @@ def run_app():
                                                            status_label))
     delete_btn.pack(side=LEFT, padx=5, fill=X, expand=True)
 
-    print_btn = ttk.Button(button_frame, text="🖨️ Print Barcode", bootstyle="success-outline", command=print_barcode)
-    print_btn.pack(side=LEFT, padx=5, fill=X, expand=True)
+
 
 
 
     # Search Section
+
     search_frame = ttk.LabelFrame(main_frame, text="Search Product", padding=10)
     search_frame.pack(fill=X, padx=10, pady=5)
 
@@ -192,6 +223,8 @@ def run_app():
     search_entry.pack(side=LEFT, padx=5, pady=5)
     search_btn = ttk.Button(search_frame, text="🔍 Search", bootstyle="primary-outline")
     search_btn.pack(side=LEFT, padx=5)
+    # Link the search button to the perform_search function
+    search_btn.config(command=lambda: perform_search(product_list, search_entry, validation_label))
 
     # Validation message label
     validation_label = ttk.Label(form_frame, text="", foreground="red", font=("Arial", 10))
@@ -264,8 +297,24 @@ def run_app():
                                                            validation_label))
     update_btn.pack(side=LEFT, padx=5, fill=X, expand=True)
 
+    # Print
+    print_btn = ttk.Button(button_frame, text="🖨️ Print Barcode", bootstyle="success-outline", command=print_barcode)
+    print_btn.pack(side=LEFT, padx=5, fill=X, expand=True)
+
+    footer_frame = ttk.Frame(root, padding=5)
+    footer_frame.pack(side="bottom", fill="x")
+
+    footer_label = ttk.Label(
+        footer_frame,
+        text="© 2025  Created by: Chubby C. Llamado - All rights reserved",
+        font=("Arial", 9),
+        foreground="#888"
+    )
+    footer_label.pack(anchor="center")
+
     root.mainloop()
 
 
 if __name__ == "__main__":
     run_app()
+

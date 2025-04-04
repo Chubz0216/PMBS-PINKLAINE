@@ -1,4 +1,20 @@
 import sqlite3
+def search_products(keyword):
+    conn = sqlite3.connect('products.db')
+    cursor = conn.cursor()
+
+    # Search query with LIKE for name, barcode, and price
+    query = """
+        SELECT id, name, barcode, price FROM products
+        WHERE name LIKE ? OR barcode LIKE ? OR price LIKE ?
+    """
+    wildcard = f"%{keyword}%"
+    cursor.execute(query, (wildcard, wildcard, wildcard))
+    results = cursor.fetchall()
+
+    conn.close()
+    return results
+
 def check_price_data():
     try:
         conn = connect_db()
