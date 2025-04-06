@@ -14,6 +14,15 @@ from gui.buttons.view_button import view_product_list
 from gui.buttons.update_button import update_product
 from utils.utils import load_products_into_treeview
 from database import search_products  # Assuming search_products is defined in database.py
+from tkinter import PhotoImage
+from barcode import get_barcode_class
+import barcode
+from barcode.writer import ImageWriter
+from tkinter import PhotoImage, messagebox
+import time
+
+
+
 
 
 def get_selected_product_id(product_list):
@@ -36,42 +45,6 @@ def print_barcode():
     os.startfile("barcode.png", "print")
     print(f"Printing {copies} copies of the barcode...")
 
-
-def generate_barcode_display():
-    barcode_value = barcode_entry.get().strip()
-    product_name = product_name_entry.get()
-    price = price_entry.get()
-
-    # Check if barcode is exactly 12 digits
-    if barcode_value.isdigit() and len(barcode_value) == 12:
-        try:
-            # Generate barcode (EAN-13 automatically adds checksum)
-            ean = barcode.get('ean13', barcode_value, writer=ImageWriter())
-            barcode_path = "barcode.png"
-            ean.save(barcode_path)
-
-            # Load the generated barcode image
-            if os.path.exists(barcode_path):
-                barcode_img = Image.open(barcode_path)
-                barcode_img = barcode_img.resize((200, 100))
-                img_tk = ImageTk.PhotoImage(barcode_img)
-                barcode_label.config(image=img_tk)
-                barcode_label.image = img_tk
-                product_name_label.config(text=f"{product_name}")
-                price_label.config(text=f"₱{price}")
-            else:
-                print("Barcode file not found!")
-
-        except Exception as e:
-            print(f"Error generating barcode: {e}")
-            barcode_label.config(image='')
-            product_name_label.config(text="Barcode Error")
-            price_label.config(text="")
-    else:
-        print("Invalid barcode! Must be 12 digits.")
-        barcode_label.config(image='')
-        product_name_label.config(text="Invalid Barcode")
-        price_label.config(text="")
 
 
 validation_label = None
@@ -141,22 +114,52 @@ def perform_search(product_list, search_entry, validation_label):
 
     validation_label.after(2000, lambda: validation_label.config(text=""))
 
+
+def check_and_generate_barcode():
+    # Get values from the form (e.g., from Entry widget)
+    code = barcode_var.get().strip()  # assuming barcode_var is your Entry variable
+
+    # Check if input is not empty
+    if code:
+        # Call barcode generation function
+        barcode_path = generate_barcode_image(code)
+
+        # Check if barcode image was generated and exists
+        if os.path.exists(barcode_path):
+            img = Image.open(barcode_path)
+            img = img.resize((200, 100))  # Resize as needed
+            photo = ImageTk.PhotoImage(img)
+
+            # Update the label with the barcode image
+            barcode_placeholder.config(image=photo, text="")
+            barcode_placeholder.image = photo  # Keep a reference
+        else:
+            print(f"Error: Barcode image not found at {barcode_path}")
+    else:
+        print("Please enter a valid barcode code")
+
+
+
+
 def run_app():
     global validation_label, barcode_entry, product_name_entry, price_entry
 
     root = Tk()
-    root.title("PINKLAINE PRODUCT MANAGEMENT SYSTEM")
+    root.title("PINKLAINE PRODUCT MANAGEMENT BARCODE SYSTEM")
     root.geometry("1000x800")
     root.configure(bg="#FDE2E4")
-
-
 
     main_frame = ttk.Frame(root, padding=15)
     main_frame.pack(fill=BOTH, expand=True)
 
-    # Product Form Frame
+    # Configure two columns
+    main_frame.columnconfigure(0, weight=2)  # Left (Product Details)
+    main_frame.columnconfigure(1, weight=1)  # Right (Barcode)
+    main_frame.rowconfigure(2, weight=1)
+
+    # Product Form Frame (LEFT side)
     form_frame = ttk.LabelFrame(main_frame, text="Product Details", padding=10)
-    form_frame.pack(fill=X, padx=10, pady=10)
+    form_frame.grid(row=0, column=0, sticky="nsew", padx=10, pady=10)
 
     ttk.Label(form_frame, text="Product Name:").grid(row=0, column=0, padx=5, pady=5, sticky="w")
     product_name_entry = ttk.Entry(form_frame, width=40)
@@ -170,25 +173,20 @@ def run_app():
     price_entry = ttk.Entry(form_frame, width=40)
     price_entry.grid(row=2, column=1, padx=5, pady=5)
 
-    price_entry.bind("<FocusOut>", format_price)  # Format kapag nawala ang focus
-    price_entry.bind("<Return>", format_price)  # Format din kapag pinindot ang Enter
+    barcode_frame = ttk.LabelFrame(main_frame, text="Generated Barcode", padding=10)
+    barcode_frame.grid(row=0, column=1, sticky="nsew", padx=10, pady=10)
 
-    # Barcode Display Area
-    barcode_display_frame = ttk.Frame(form_frame, padding=10)
-    barcode_display_frame.grid(row=0, column=2, rowspan=3, padx=10, pady=5)
 
-    barcode_label = ttk.Label(barcode_display_frame)
-    barcode_label.pack()
 
-    product_name_label = ttk.Label(barcode_display_frame, text="", font=("Arial", 10, "bold"))
-    product_name_label.pack()
 
-    price_label = ttk.Label(barcode_display_frame, text="", font=("Arial", 10))
-    price_label.pack()
+
+
+    # Placeholder label for displaying barcode image
+    barcode_placeholder = ttk.Label(barcode_frame, text="[ Barcode Image Here ]")
+    barcode_placeholder.pack()
 
     status_label = ttk.Label(form_frame, text="", foreground="red", font=("Arial", 10))  # Define status_label
     status_label.grid(row=4, column=0, columnspan=3, pady=5)
-
 
 
     # Buttons (Below Product Details)
@@ -217,7 +215,7 @@ def run_app():
     # Search Section
 
     search_frame = ttk.LabelFrame(main_frame, text="Search Product", padding=10)
-    search_frame.pack(fill=X, padx=10, pady=5)
+    search_frame.grid(row=1, column=0, columnspan=2, sticky="ew", padx=10, pady=5)
 
     search_entry = ttk.Entry(search_frame, width=50)
     search_entry.pack(side=LEFT, padx=5, pady=5)
@@ -232,7 +230,7 @@ def run_app():
 
     # Product List Table (Treeview)
     table_frame = ttk.LabelFrame(main_frame, text="📦 Product List", padding=10)
-    table_frame.pack(fill=BOTH, expand=True, padx=10, pady=10)
+    table_frame.grid(row=2, column=0, columnspan=2, sticky="nsew", padx=10, pady=10)
 
     # Create Treeview
     product_list = ttk.Treeview(table_frame, columns=("ID", "Name", "Barcode", "Price"), show="headings", height=10)
@@ -298,8 +296,8 @@ def run_app():
     update_btn.pack(side=LEFT, padx=5, fill=X, expand=True)
 
     # Print
-    print_btn = ttk.Button(button_frame, text="🖨️ Print Barcode", bootstyle="success-outline", command=print_barcode)
-    print_btn.pack(side=LEFT, padx=5, fill=X, expand=True)
+    generate_button = ttk.Button(form_frame, text="Generate Barcode", command=check_and_generate_barcode)
+    generate_button.grid(row=4, column=0, columnspan=2, pady=10)
 
     footer_frame = ttk.Frame(root, padding=5)
     footer_frame.pack(side="bottom", fill="x")
