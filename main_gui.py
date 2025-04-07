@@ -20,6 +20,8 @@ import barcode
 from barcode.writer import ImageWriter
 from tkinter import PhotoImage, messagebox
 import time
+from gui.buttons.generate_barcode import generate_barcode_image_in_memory, display_barcode
+
 
 
 
@@ -296,7 +298,8 @@ def run_app():
     update_btn.pack(side=LEFT, padx=5, fill=X, expand=True)
 
     # Print
-    generate_button = ttk.Button(form_frame, text="Generate Barcode", command=check_and_generate_barcode)
+    generate_button = ttk.Button(form_frame, text="Generate Barcode",
+                                 command=lambda: display_barcode(barcode_entry.get(), barcode_placeholder))
     generate_button.grid(row=4, column=0, columnspan=2, pady=10)
 
     footer_frame = ttk.Frame(root, padding=5)
