@@ -2,6 +2,8 @@ import ttkbootstrap as ttk
 from ttkbootstrap.constants import *
 from PIL import Image, ImageTk
 import os
+
+
 import barcode
 from barcode.writer import ImageWriter
 import tkinter as tk
@@ -25,8 +27,6 @@ from gui.buttons.generate_barcode import generate_barcode_image_in_memory, displ
 
 
 
-
-
 def get_selected_product_id(product_list):
     try:
         selected_item = product_list.selection()
@@ -41,17 +41,13 @@ def get_selected_product_id(product_list):
         return None
 
 
-
 def print_barcode():
     copies = int(print_copies_entry.get()) if print_copies_entry.get().isdigit() else 1
     os.startfile("barcode.png", "print")
     print(f"Printing {copies} copies of the barcode...")
 
 
-
 validation_label = None
-
-
 
 
 def on_product_select(event, product_list, product_name_entry, barcode_entry, price_entry):
@@ -80,13 +76,24 @@ def on_product_select(event, product_list, product_name_entry, barcode_entry, pr
 
 def format_price(event=None):
     raw = price_entry.get().replace("₱", "").replace(",", "").strip()
-    try:
-        value = float(raw)
-        formatted = f"₱{value:,.2f}"
-        price_entry.delete(0, tk.END)
-        price_entry.insert(0, formatted)
-    except ValueError:
-        price_entry.delete(0, tk.END)
+
+    # I-check kung wala pang decimal sa input
+    if raw and '.' not in raw:  # Kung walang decimal point, apply formatting na walang decimal
+        try:
+            value = float(raw)
+            formatted = f"₱{value:,.0f}"  # Walang decimal, whole number format
+            price_entry.delete(0, tk.END)
+            price_entry.insert(0, formatted)
+        except ValueError:
+            price_entry.delete(0, tk.END)
+    elif raw:
+        try:
+            value = float(raw)
+            formatted = f"₱{value:,.2f}"  # Kung may decimal, may .00 format
+            price_entry.delete(0, tk.END)
+            price_entry.insert(0, formatted)
+        except ValueError:
+            price_entry.delete(0, tk.END)
 
 
 def perform_search(product_list, search_entry, validation_label):
@@ -141,7 +148,8 @@ def check_and_generate_barcode():
         print("Please enter a valid barcode code")
 
 
-
+def on_print_button_click(code, price, product_name):
+    display_barcode_for_printing(code, price, product_name)
 
 def run_app():
     global validation_label, barcode_entry, product_name_entry, price_entry
@@ -149,7 +157,13 @@ def run_app():
     root = Tk()
     root.title("PINKLAINE PRODUCT MANAGEMENT BARCODE SYSTEM")
     root.geometry("1000x800")
-    root.configure(bg="#FDE2E4")
+    root.configure(bg="#FFC0CB")
+    # Create style object for ttk customization
+
+    style = ttk.Style()
+
+    # Configure the style for the barcode frame (darker background)
+    style.configure("Dark.TLabelframe", background="#A9A9A9", foreground="white")
 
     main_frame = ttk.Frame(root, padding=15)
     main_frame.pack(fill=BOTH, expand=True)
@@ -174,6 +188,8 @@ def run_app():
     ttk.Label(form_frame, text="Price:").grid(row=2, column=0, padx=5, pady=5, sticky="w")
     price_entry = ttk.Entry(form_frame, width=40)
     price_entry.grid(row=2, column=1, padx=5, pady=5)
+    # Bind the format_price function to the price_entry field
+    price_entry.bind("<KeyRelease>", format_price)  # Binding for price formatting on key release
 
     barcode_frame = ttk.LabelFrame(main_frame, text="Generated Barcode", padding=10)
     barcode_frame.grid(row=0, column=1, sticky="nsew", padx=10, pady=10)
@@ -186,6 +202,7 @@ def run_app():
     # Placeholder label for displaying barcode image
     barcode_placeholder = ttk.Label(barcode_frame, text="[ Barcode Image Here ]")
     barcode_placeholder.pack()
+
 
     status_label = ttk.Label(form_frame, text="", foreground="red", font=("Arial", 10))  # Define status_label
     status_label.grid(row=4, column=0, columnspan=3, pady=5)
@@ -299,8 +316,14 @@ def run_app():
 
     # Print
     generate_button = ttk.Button(form_frame, text="Generate Barcode",
-                                 command=lambda: display_barcode(barcode_entry.get(), barcode_placeholder))
-    generate_button.grid(row=4, column=0, columnspan=2, pady=10)
+                                 command=lambda: display_barcode(
+                                     barcode_entry.get(),  # barcode from barcode_entry
+                                     price_entry.get(),  # price from price_entry
+                                     product_name_entry.get(),  # product name from product_name_entry
+                                     barcode_placeholder  # barcode_placeholder (for displaying the barcode image)
+                                 ))
+
+    generate_button.grid(row=3, column=4, columnspan=2, pady=10)
 
     footer_frame = ttk.Frame(root, padding=5)
     footer_frame.pack(side="bottom", fill="x")
